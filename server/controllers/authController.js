@@ -21,14 +21,18 @@ return res.status(200).json({success:true, token, user: {_id: user._id, name: us
 
 }
 catch (error) {
-    console.error("Login error:", error);
-        return res.status(500).json({ 
-            success: false, 
-            error: "Server error during login" 
-        });
+    res.status(500).json({success:false, error: error.message})
 }
 
 
 
 }
-export {login};
+
+
+const verify = (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: "Not authorized" });
+  }
+  return res.status(200).json({ success: true, user: req.user });
+};
+export {login , verify};

@@ -1,10 +1,17 @@
-import React from "react";
+import React, { use } from "react";
 import axios from "axios";
 import { useState } from "react";
+import{ useAuth } from "../context/authContext.jsx";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState(null);
+    
+    const {login} = useAuth();
+    const navigate = useNavigate();
+
 
     const handleSubmit = async(e) => {
         e.preventDefault();
@@ -12,10 +19,25 @@ const Login = () => {
         try{ 
             
             const response = await axios.post("http://localhost:3000/api/auth/login", {email, password});
-            alert("hello");
-            console.log(response);
+            if(response.data.success){
+                login(response.data.user);
+                localStorage.setItem("token", response.data.token);
+                if(response.data.user.role === "admin"){
+                    navigate("/admin-dashboard");
+                }else{
+                    navigate("/employee-dashboard");
+                }
+                
+            }
             
         } catch(error){
+            if(error.response && error.response.data){
+                setError(error.response.data.error);
+            }
+
+            else{
+                setError("Server Error. Please try again later.");
+            }
             console.log("Login Failed - Full error:", error);
         console.log("Error response:", error.response?.data);
         console.log("Status code:", error.response?.status);
@@ -32,14 +54,15 @@ const Login = () => {
               <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
                   Sign in to your account
               </h1>
+                {error && <p className="text-red-500">{error}</p>}
               <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit} >
                   <div>
                       <label  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
-                      <input type="email" name="email" id="email" className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com"  onChange={(e)=> setEmail(e.target.value)}/>
+                      <input type="email" name="email" id="email" className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" required onChange={(e)=> setEmail(e.target.value)} />
                   </div>
                   <div>
                       <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                      <input type="password" name="password" id="password" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" onChange={(e)=> setPassword(e.target.value)}/>
+                      <input type="password" name="password" id="password" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required onChange={(e)=> setPassword(e.target.value)}/>
                   </div>
                   <div className="flex items-center justify-between">
                       <div className="flex items-start">
