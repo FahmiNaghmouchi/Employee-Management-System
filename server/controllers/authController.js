@@ -1,38 +1,39 @@
-import User from "../models/User.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import User from '../models/User.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-try {
-const {email, password} = req.body;
-const user = await User.findOne({email});
-if(!user) {
-    return res.status(400).json({success:false, error: "User not found"});
-}
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({success: false, error : "Invalid email" }); // return prevents further execution
+    }
 
-const isMatch = await bcrypt.compare(password, user.password);
-if(!isMatch) {
-    return res.status(400).json({success:false, error: "Invalid credentials"});
-}
-const token = jwt.sign({id: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn: "10d"});
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({success: false, error : "Invalid password" });
+    }
 
-return res.status(200).json({success:true, token, user: {_id: user._id, name: user.name, email: user.email, role: user.role}});
+    const token = jwt.sign(
+      { _id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
-}
-catch (error) {
-    res.status(500).json({success:false, error: error.message})
-}
+    return res.status(200).json({
+      success: true,
+      token,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+    });
 
-
-
-}
-
-
-const verify = (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, error: "Not authorized" });
+  } catch (error) {
+      return res.status(500).json({ success: false,error: error.message });
   }
-  return res.status(200).json({ success: true, user: req.user });
 };
-export {login , verify};
+const verify =  (req, res) => {
+  return res.status(200).json({ success: true, user: req.user });
+}
+
+export { login,verify };
