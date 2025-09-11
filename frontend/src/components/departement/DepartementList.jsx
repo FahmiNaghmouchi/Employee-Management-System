@@ -1,11 +1,58 @@
-import React, { useState }  from "react";
+import React, { useEffect, useState }  from "react";
+import DataTable from "react-data-table-component";
 
 import { Link } from "react-router-dom";
 import { MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
+import {columns} from "../../utils/DepartmentHelper.jsx";
+import {DepartementButtons} from "../../utils/DepartmentHelper.jsx";
+import axios from "axios";
+
+
 
 
 const DepartmentList = () => {
+  const [departements, setDepartements] = useState([]);
+  const [depLoading, setDepLoading] = useState(false);
+
+  useEffect(()=>{
+
+     const fetchDepartments = async() => {
+      setDepLoading(true);
+    try{
+      const response = await axios.get("http://localhost:5000/api/departement", {
+        headers : {
+          "Authorization" : `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      if(response.data.success){
+          let sno = 1;
+          const data =await response.data.departements.map((dep)=> (
+            {
+              _id: dep._id,
+              sno: sno++,
+              dep_name: dep.dep_name,
+              action : (<DepartementButtons _id = {dep._id}/>)
+            }
+          )
+        )
+        setDepartements(data);
+        }
+      
+    }catch(error){
+      if(error.response && !error.response.data.success){
+        alert(error.response.data.error)
+      }
+    } finally{
+      setDepLoading(false);
+    }
+ 
+
+} ;  fetchDepartments();
+},[]);
+
+  
        const [searchTerm, setSearchTerm] = useState("");
 
 
@@ -29,6 +76,7 @@ const DepartmentList = () => {
   };
 
     return (
+      <>{depLoading ? <div>Loading ...</div> :
       <div className="min-h-screen bg-gray-50 p-6">
       {/* Centered Search Input */}
       <div className="flex justify-center mb-6">
@@ -56,51 +104,17 @@ const DepartmentList = () => {
           Add Department
         </Link>
       </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl shadow-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">S No</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Department</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDepartments.map((dept, idx) => (
-              <motion.tr
-                key={dept.id}
-                custom={idx}
-                initial="hidden"
-                animate="visible"
-                variants={rowVariants}
-                className={idx % 2 === 0 ? "bg-gray-50 hover:bg-gray-100 transition" : "hover:bg-gray-100 transition"}
-              >
-                <td className="px-6 py-4">{idx + 1}</td>
-                <td className="px-6 py-4 font-medium text-gray-700">{dept.name}</td>
-                <td className="px-6 py-4 flex justify-end gap-2">
-                  <button className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition">
-                    <PencilSquareIcon className="h-4 w-4" />
-                    Edit
-                  </button>
-                  <button className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition">
-                    <TrashIcon className="h-4 w-4" />
-                    Delete
-                  </button>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+        <div>
+            <DataTable columns={columns} data={departements} />
       </div>
-
       {/* Footer */}
       <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <span>Rows per page: 10</span>
         <span>1–{filteredDepartments.length} of {departments.length}</span>
       </div>
+      
     </div>
+    }</>
     );
 }
 
